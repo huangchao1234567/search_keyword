@@ -12,37 +12,46 @@ use GuzzleHttp\Client;
 class Keyword
 {
 
-    public function sogouGather($key)
+    const list_length = 5;//列表根据关键字搜索出来取值的条数
+
+    public function sogouGather($key, $id)
     {
-        $url = 'https://www.sogou.com/sogou?query=' . $key . '&&insite=wenwen.sogou.com';;
-        $this->listGather($url);
-
-        $this->getDetails();
-
+        $url = 'https://www.sogou.com/sogou?query=' . urlencode($key) . '&ie=utf8&insite=wenwen.sogou.com';
+        $this->listGather($url, $id);
     }
 
     /**列表采集
      * @return bool
      */
-    public function listGather($url)
+    public function listGather($url, $id)
     {
         if (empty($url)) {
             return false;
         }
         // 采集规则
         $rules = [
-            'title' => ['.vrTitle>a', 'text'],
-            'url'   => ['.vrTitle>a', 'href'],
+            'title' => ['.vrwrap>h3>a', 'text'],
+            'url'   => ['.vrwrap>h3>a', 'href'],
         ];
 
         $data = QueryList::Query($url, $rules)->data;
 
-        if ($data) {
-            foreach ($data as $val) {
+
+        if ($data && count($data) >= self::list_length) {
+            $arr = array_slice($data, 0, self::list_length);
+            foreach ($arr as $val) {
+                $details_data = $this->detailsGather('https://www.sogou.com' . $val['url']);
+                if ($details_data === false) {
+                    continue;
+                }
                 $add_array [] = [
                     'title_string' => $val['title'],
                     'url'          => $val['url'],
-                    'created_at'   => Carbon::now()
+                    'created_at'   => Carbon::now(),
+                    'updated_at'   => Carbon::now(),
+                    'keyword_id'   => $id,
+                    'details_data' => $details_data['details_data'],
+                    'details_url'  => $details_data['details_url']
                 ];
             }
 
@@ -51,57 +60,34 @@ class Keyword
         return true;
     }
 
-    public function getDetails()
-    {
-        $url   = 'https://www.sogou.com';
-        $title = Title::take(2)->get()->toArray();
-        foreach ($title as $value) {
-            $add = $this->detailsGather($url . $value['url'], $value['id']);
-            Title::where('id', $value['id'])->update([
-                'type'       => $add === false ? 2 : 1,
-                'updated_at' => Carbon::now()
-            ]);
-        }
-
-    }
 
     /**
      * 详情采集
      */
-    public function detailsGather($url, $id)
+    public function detailsGather($url)
     {
-
         $client   = new Client(['base_uri' => $url, 'verify' => false]);
         $response = $client->request('GET');
         /*   var_export($response->getStatusCode());
            var_export($response->getBody()->getContents());*/
         $contents = $response->getBody()->getContents();
         preg_match_all('/window\.location\.replace\("([^"]*?)"\)/', $contents, $url_array);
-        $url = '';
-        if (count($url_array) == 2) {
-            $url = $url_array[1][0];
-        }
+
+        $url = count($url_array) == 2 ? $url_array[1][0] : '';
         if (empty($url)) {
             return false;
         }
-
-
         // 采集规则
         $rules = [
             'details' => ['pre', 'html'],
         ];
-
-        $data = QueryList::Query($url, $rules)->data;
-        if ($data) {
-            foreach ($data as $val) {
-                $add[] = [
-                    'title_id' => $id,
-                    'details'  => $val['details'],
-                    'url'      => $url
-                ];
-            }
-            return DB::table('details')->insert($add);
+        $data  = QueryList::Query($url, $rules)->data;
+        if (empty($data)) {
+            return false;
         }
-        return false;
+        return [
+            'details_data' => $data[0]['details'],
+            'details_url'  => $url
+        ];
     }
 }
