@@ -14,11 +14,15 @@ class Keyword
 
     const list_length = 5;//列表根据关键字搜索出来取值的条数
 
-    public function keywordRun($min = 0, $max = 100000)
+    public function keywordRun($bool = true, $min = 0, $max = 100000)
     {
+        if ($bool) {
+            $model = DB::table('keyword')->where('type', '<>', 1);
+        } else {
+            $model = DB::table('keyword')->where('type', '<>', 1)
+                ->where('id', '>=', $min)->where('id', '<=', $max);
+        }
         $number = 50;
-        $model  = DB::table('keyword')->where('type', '<>', 1)
-            ->where('id', '>=', $min)->where('id', '<=', $max);
         while ($model->first()) {
             $data   = $model->take($number)->get();
             $id_all = [];
