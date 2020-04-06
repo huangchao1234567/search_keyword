@@ -27,7 +27,7 @@ class Keyword
             $data   = $model->take($number)->get();
             $id_all = [];
             foreach ($data as $cal) {
-                $id_all[] = $cal;
+                $id_all[] = $cal->id;
                 $this->sogouGather($cal->keyword, $cal->id);
             }
             if ($id_all) {
