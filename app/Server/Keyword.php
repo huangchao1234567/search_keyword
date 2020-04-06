@@ -14,6 +14,25 @@ class Keyword
 
     const list_length = 5;//列表根据关键字搜索出来取值的条数
 
+    public function keywordRun($min = 0, $max = 100000)
+    {
+        $number = 50;
+        $model  = DB::table('keyword')->where('type', '<>', 1)
+            ->where('id', '>=', $min)->where('id', '<=', $max);
+        while ($model->first()) {
+            $data   = $model->take($number)->get();
+            $id_all = [];
+            foreach ($data as $cal) {
+                $id_all[] = $cal;
+                $this->sogouGather($cal->keyword, $cal->id);
+            }
+            if ($id_all) {
+                DB::table('keyword')->whereIn('id', $id_all)->update(['type' => 1]);
+            }
+        }
+    }
+
+
     public function sogouGather($key, $id)
     {
         $url = 'https://www.sogou.com/sogou?query=' . urlencode($key) . '&ie=utf8&insite=wenwen.sogou.com';

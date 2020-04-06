@@ -17,7 +17,8 @@ class UserTest extends TestCase
     public function testExample()
     {
         $new=new Keyword();
-        $new->sogouGather('商标注册',1);
+
+        $new->keywordRun();
         $this->assertTrue(true);
     }
 }
