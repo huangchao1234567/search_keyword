@@ -113,4 +113,9 @@ class Keyword
             'details_url'  => $url
         ];
     }
+
+    public function listData($where)
+    {
+       return DB::table('website')->paginate(array_get($where,'num',10))->toArray();
+    }
 }
