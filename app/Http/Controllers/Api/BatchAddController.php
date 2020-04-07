@@ -39,7 +39,7 @@ class BatchAddController extends Controller
         $list           = $this->keyword->listData($param);
         $param['total'] = $list['total'];
         return [
-            '$param' => $param,
+            'param' => $param,
             'data'   => $list['data']
         ];
 
