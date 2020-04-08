@@ -2,6 +2,7 @@
 
 namespace App\Server;
 
+use App\Jobs\BatchAdd;
 use App\Models\Title;
 use Illuminate\Filesystem\Cache;
 use QL\QueryList;
@@ -65,13 +66,14 @@ class Keyword
 
 
         if ($data && count($data) >= self::list_length) {
-            $arr = array_slice($data, 0, self::list_length);
+            $arr       = array_slice($data, 0, self::list_length);
+
             foreach ($arr as $val) {
                 $details_data = $this->detailsGather('https://www.sogou.com' . $val['url']);
                 if ($details_data === false) {
                     continue;
                 }
-                $add_array [] = [
+                $add_array  = [
                     'title_string' => $val['title'],
                     'url'          => $val['url'],
                     'created_at'   => Carbon::now(),
@@ -80,9 +82,8 @@ class Keyword
                     'details_data' => $details_data['details_data'],
                     'details_url'  => $details_data['details_url']
                 ];
+                Title::insert($add_array);
             }
-
-            return Title::insert($add_array);
         }
         return true;
     }
@@ -106,14 +107,15 @@ class Keyword
         }
         // 采集规则
         $rules = [
-            'details' => ['pre', 'html'],
+            'details' => ['pre', 'text'],
         ];
         $data  = QueryList::Query($url, $rules)->data;
         if (empty($data)) {
             return false;
         }
+        $details_data = trim(str_replace(array(" ", "\t", "\n", "\r", "<br>", "\r\n"), ' ', $data[0]['details']));
         return [
-            'details_data' => $data[0]['details'],
+            'details_data' => $details_data,
             'details_url'  => $url
         ];
     }
@@ -126,8 +128,9 @@ class Keyword
     public function batchAdd($file)
     {
         $excel_array = $this->getExcelData($file);
-        return DB::table('keyword')->insert($excel_array);
-
+        $add         = DB::table('keyword')->insert($excel_array);
+        BatchAdd::dispatch()->onQueue('redis');
+        return $add;
     }
 
     public function getExcelData($file, $webstr_id = 0)

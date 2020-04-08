@@ -32,6 +32,7 @@ class BatchAddController extends Controller
         $file      = $_FILES;
         try {
             $add = $this->keyword->batchAdd($file['file']);
+           // $this->keyword->keywordRun();
         } catch (\Exception $e) {
             return [
                 'code' => 101,
