@@ -21,4 +21,9 @@ class UserTest extends TestCase
         $new->keywordRun();
         $this->assertTrue(true);
     }
+
+    public function testFanyi()
+    {
+        dd(12);
+    }
 }
