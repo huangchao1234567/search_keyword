@@ -3,6 +3,7 @@
 namespace App\Admin\Controllers;
 
 use App\Models\Website;
+use App\Server\Keyword;
 use Encore\Admin\Form;
 use Encore\Admin\Grid;
 use Encore\Admin\Layout\Content;
@@ -16,7 +17,12 @@ class KeywordController extends Controller
 {
     use ModelForm;
 
+    public $keyword;
 
+    public function __construct()
+    {
+        $this->keyword = new Keyword();
+    }
     public function index(Request $request)
     {
         $param = array(
@@ -118,6 +124,27 @@ class KeywordController extends Controller
         $grid->disableRowSelector();
       //  $grid->quickSearch('title');
         return $grid;
+
+    }
+
+    public function excelFileBatchAdd(Request $request)
+    {
+
+       $all= $request->all();
+
+        $file      = $_FILES;
+/*dd($file,$all);*/
+        try {
+            $add = $this->keyword->batchAdd($file['file']);
+            // $this->keyword->keywordRun();
+        } catch (\Exception $e) {
+            return [
+                'code' => 101,
+                'msg'  => $e->getMessage()
+            ];
+        }
+
+        return ['code' => $add ? 100 : 101,];
 
     }
 }

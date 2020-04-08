@@ -11,6 +11,10 @@ Route::group([
 ], function (Router $router) {
 
     $router->get('/', 'HomeController@index');
+    $router->get('excelBatchAdd', function () {
+        return view('excelfile');
+    });
+    $router->post('excelBatchAddFile', 'KeywordController@excelFileBatchAdd');
     $router->resource('keyword_list', 'KeywordController');
 
 });
